@@ -65,6 +65,42 @@ function truncateQuery(q: string, max = 40): string {
   return q.length <= max ? q : `${q.slice(0, max - 1)}…`
 }
 
+function computeProgress(state: AppState): {
+  percent: number
+  label: string
+  failed: boolean
+} {
+  if (state.status === 'idle') {
+    return { percent: 0, label: '', failed: false }
+  }
+  if (state.status === 'synthesizing') {
+    return { percent: 88, label: 'Writing memo…', failed: false }
+  }
+  if (state.status === 'done') {
+    return { percent: 100, label: 'Research complete', failed: false }
+  }
+  if (state.status === 'failed') {
+    return { percent: 100, label: 'Research failed', failed: true }
+  }
+
+  const finished = state.searches.filter(
+    (s) => s.status === 'success' || s.status === 'failed'
+  ).length
+  const running = state.searches.some((s) => s.status === 'running')
+  const hasQueries = state.searches.some((s) => s.query)
+
+  if (!hasQueries) {
+    return { percent: 8, label: 'Starting…', failed: false }
+  }
+
+  const percent = Math.min(78, 12 + finished * 16 + (running ? 6 : 0))
+  return {
+    percent,
+    label: `Parallel searches: ${finished} of 4 finished`,
+    failed: false,
+  }
+}
+
 export default function App() {
   const [ticker, setTicker] = useState('')
   const [validationError, setValidationError] = useState<string | null>(null)
@@ -137,6 +173,8 @@ export default function App() {
   useResearchStream(state.runId, handleEvent)
 
   const runActive = state.status === 'running' || state.status === 'synthesizing'
+  const showPipeline = state.status !== 'idle'
+  const progress = computeProgress(state)
 
   async function startResearch() {
     const symbol = ticker.toUpperCase()
@@ -176,38 +214,18 @@ export default function App() {
           <span className="text-sm font-semibold tracking-wide text-white">
             Ticker Research
           </span>
-          <a
-            href={renderSignupUrlWithUtms('navbar_button')}
-            className="dds-btn-ghost text-sm"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Sign up on Render
+          <a href={DEPLOY_URL} target="_blank" rel="noreferrer">
+            <img
+              src="https://render.com/images/deploy-to-render-button.svg"
+              alt="Deploy to Render"
+              height={26}
+            />
           </a>
         </div>
       </header>
 
       <main className="mx-auto max-w-[960px] px-6 py-8">
-        <div className="mb-8 flex flex-wrap items-center gap-3 border border-white/10 bg-white/[0.02] px-4 py-3">
-          <span className="text-sm text-white/70">Deploy your own copy</span>
-          <a href={DEPLOY_URL} target="_blank" rel="noreferrer">
-            <img
-              src="https://render.com/images/deploy-to-render-button.svg"
-              alt="Deploy to Render"
-              height={28}
-            />
-          </a>
-          <a
-            href={renderSignupUrlWithUtms('hero_cta')}
-            className="dds-btn-ghost text-sm"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Sign up on Render
-          </a>
-        </div>
-
-        <section className="mb-10">
+        <section className="mb-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
             <input
               type="text"
@@ -232,15 +250,32 @@ export default function App() {
           {validationError && (
             <p className="mt-2 text-sm text-red-400">{validationError}</p>
           )}
+          {!showPipeline && (
+            <p className="mt-3 text-sm text-white/50">
+              Parallel Exa searches, then a Claude memo. Most v1 runs fail on purpose.
+            </p>
+          )}
         </section>
 
-        <section className="mb-12 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {state.searches.map((search, i) => (
-            <SearchCard key={i} index={i} search={search} />
-          ))}
-        </section>
+        {showPipeline && (
+          <>
+            <ProgressBar
+              percent={progress.percent}
+              label={progress.label}
+              failed={progress.failed}
+            />
 
-        <MemoPanel state={state} />
+            <section className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {state.searches.map((search, i) => (
+                <SearchCard key={i} index={i} search={search} />
+              ))}
+            </section>
+
+            {(state.status === 'synthesizing' ||
+              state.status === 'done' ||
+              state.status === 'failed') && <MemoPanel state={state} />}
+          </>
+        )}
       </main>
 
       <footer className="mx-auto flex max-w-[960px] flex-wrap items-center justify-between gap-4 border-t border-white/10 px-6 py-8 text-sm text-white/60">
@@ -268,13 +303,40 @@ export default function App() {
   )
 }
 
+function ProgressBar({
+  percent,
+  label,
+  failed,
+}: {
+  percent: number
+  label: string
+  failed: boolean
+}) {
+  return (
+    <section className="mb-10" aria-live="polite">
+      <div className="mb-2 flex items-center justify-between gap-4 text-sm">
+        <span className={failed ? 'text-red-400' : 'text-white/80'}>{label}</span>
+        <span className="shrink-0 font-mono tabular-nums text-white/50">{percent}%</span>
+      </div>
+      <div className="h-2 w-full overflow-hidden bg-white/10">
+        <div
+          className={`h-full transition-all duration-300 ease-out ${
+            failed ? 'bg-red-500' : 'bg-violet-500'
+          }`}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </section>
+  )
+}
+
 function SearchCard({ index, search }: { index: number; search: SearchSlot }) {
   const label = String(index + 1).padStart(2, '0')
   const statusLabel =
     search.status === 'idle'
-      ? 'Idle'
+      ? 'Queued'
       : search.status === 'running'
-        ? 'Searching...'
+        ? 'Searching…'
         : search.status === 'success'
           ? 'Done'
           : 'Failed'
@@ -297,7 +359,7 @@ function SearchCard({ index, search }: { index: number; search: SearchSlot }) {
         </span>
       </div>
       <p className="mb-4 text-sm text-white/80">
-        {search.query ? truncateQuery(search.query) : 'Waiting for query...'}
+        {search.query ? truncateQuery(search.query) : '…'}
       </p>
       <div className="h-6 text-xs text-white/50">
         {search.status === 'success' && `${search.articleCount ?? 0} articles found`}
@@ -314,19 +376,11 @@ function MemoPanel({ state }: { state: AppState }) {
 
   return (
     <section
-      className={`dds-card mt-12 p-8 ${failed ? 'border-red-500/50' : ''}`}
+      className={`dds-card p-8 ${failed ? 'border-red-500/50' : ''}`}
     >
-      {state.status === 'idle' && (
-        <p className="text-center text-white/50">Enter a ticker to begin</p>
-      )}
-      {state.status === 'running' && (
-        <p className="animate-pulse-violet text-center text-white/70">
-          Gathering research...
-        </p>
-      )}
       {state.status === 'synthesizing' && (
-        <p className="animate-pulse-violet text-center text-white/70">
-          Writing memo...
+        <p className="text-center text-sm text-white/60">
+          Synthesizing memo from search results…
         </p>
       )}
       {state.status === 'done' && state.memo && (
