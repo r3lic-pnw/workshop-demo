@@ -7,10 +7,19 @@ const GITHUB_REPO = 'https://github.com/ojusave/workshop-demo'
 const DEPLOY_URL = `https://render.com/deploy?repo=${GITHUB_REPO}`
 
 type SearchSlot = {
-  status: 'idle' | 'running' | 'success' | 'failed'
+  status: 'idle' | 'running' | 'success' | 'failed' | 'aborted'
   query?: string
   articleCount?: number
   error?: string
+}
+
+function abortInFlightSearches(searches: SearchSlot[]): SearchSlot[] {
+  return searches.map((s) => {
+    if (s.status === 'running' || s.status === 'idle') {
+      return { ...s, status: 'aborted' as const }
+    }
+    return s
+  })
 }
 
 type AppState = {
@@ -83,8 +92,8 @@ function computeProgress(state: AppState): {
     return { percent: 100, label: 'Research failed', failed: true }
   }
 
-  const finished = state.searches.filter(
-    (s) => s.status === 'success' || s.status === 'failed'
+  const finished = state.searches.filter((s) =>
+    ['success', 'failed', 'aborted'].includes(s.status)
   ).length
   const running = state.searches.some((s) => s.status === 'running')
   const hasQueries = state.searches.some((s) => s.query)
@@ -108,6 +117,13 @@ export default function App() {
 
   const handleEvent = useCallback((event: ResearchEvent) => {
     setState((prev) => {
+      if (
+        (prev.status === 'failed' || prev.status === 'done') &&
+        event.type !== 'started'
+      ) {
+        return prev
+      }
+
       const next = { ...prev, searches: [...prev.searches] }
 
       if (event.type === 'started' && event.queries) {
@@ -161,8 +177,8 @@ export default function App() {
       if (event.type === 'failed') {
         next.status = 'failed'
         next.error = event.error ?? 'Research failed'
-        const succeeded = next.searches.filter((s) => s.status === 'success').length
-        next.failedSearchCount = succeeded
+        next.searches = abortInFlightSearches(next.searches)
+        next.failedSearchCount = next.searches.filter((s) => s.status === 'success').length
         return next
       }
 
@@ -336,7 +352,9 @@ function SearchCard({ index, search }: { index: number; search: SearchSlot }) {
         ? 'Searching…'
         : search.status === 'success'
           ? 'Done'
-          : 'Failed'
+          : search.status === 'aborted'
+            ? 'Aborted'
+            : 'Failed'
 
   const pillClass =
     search.status === 'idle'
@@ -345,7 +363,9 @@ function SearchCard({ index, search }: { index: number; search: SearchSlot }) {
         ? 'bg-violet-500/20 text-violet-300 animate-pulse-violet'
         : search.status === 'success'
           ? 'bg-green-500/20 text-green-300'
-          : 'bg-red-500/20 text-red-300'
+          : search.status === 'aborted'
+            ? 'bg-white/10 text-white/50'
+            : 'bg-red-500/20 text-red-300'
 
   return (
     <article className="dds-card flex flex-col p-4">
@@ -362,6 +382,9 @@ function SearchCard({ index, search }: { index: number; search: SearchSlot }) {
         {search.status === 'success' && `${search.articleCount ?? 0} articles found`}
         {search.status === 'failed' && (
           <span className="text-red-400">{search.error ?? 'Search failed'}</span>
+        )}
+        {search.status === 'aborted' && (
+          <span className="text-white/40">Stopped when the run aborted</span>
         )}
       </div>
     </article>
