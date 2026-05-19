@@ -45,10 +45,10 @@ Extract these from the sources. If a value is not in the sources, write "N/A". D
 Two or three sentences. Lead with the most material point.
 
 ## Bull Case
-Three bullets. Each one sentence. Cite sources inline with [N].
+Three bullets. Each one sentence. Cite sources inline with [N] only (numbered references, not URLs).
 
 ## Bear Case
-Three bullets. Each one sentence. Cite sources inline with [N].
+Three bullets. Each one sentence. Cite sources inline with [N] only (numbered references, not URLs).
 
 ## Analyst Consensus
 One paragraph. Reference the analyst target and rating from the Snapshot. Add color from any analyst commentary in the sources.
@@ -60,7 +60,7 @@ Two short paragraphs covering developments from ${todayLabel} or the last 24 hou
 One paragraph on market position and key peers.
 
 ## Sources
-Numbered list of sources actually cited above. Format: [N] Title (URL)
+Omit this section: it is appended automatically as markdown links ([title](url) per cited source).
 
 Rules:
 - Terse, analytical tone. No marketing language. No phrases like "it is important to note."

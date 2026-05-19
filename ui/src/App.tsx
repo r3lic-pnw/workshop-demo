@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { renderSignupUrlWithUtms } from './lib/renderSignup'
-import { linkifyCitations } from './linkifyCitations'
+import { prepareMemoMarkdown } from './linkifyCitations'
 import type { SourceRef } from '../../shared/types'
 
 const GITHUB_REPO = 'https://github.com/ojusave/workshop-demo'
@@ -300,7 +300,7 @@ export default function App() {
           )}
           {!showPipeline && (
             <p className="mt-3 text-sm text-white/50">
-              Four parallel Exa searches, then a Claude memo. Tickers and open questions both work.
+              Four parallel Exa searches, then a Claude memo. Citations link to sources in the text.
             </p>
           )}
         </section>
@@ -480,7 +480,7 @@ function MemoPanel({
   error: string | null
   failedSearchCount: number
 }) {
-  const linkedMemo = memo ? linkifyCitations(memo, sources) : null
+  const linkedMemo = memo ? prepareMemoMarkdown(memo, sources) : null
 
   return (
     <section className={`dds-card p-8 ${failed ? 'border-red-500/50' : ''}`}>
