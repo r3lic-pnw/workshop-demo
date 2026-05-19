@@ -224,8 +224,8 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-10 border-b border-white/10 bg-[#0a0a0a]/95 backdrop-blur">
+    <div className="flex h-full flex-col">
+      <header className="shrink-0 border-b border-white/10 bg-[#0a0a0a]">
         <div className="mx-auto flex max-w-[960px] items-center justify-between px-6 py-4">
           <span className="text-sm font-semibold tracking-wide text-white">
             Ticker Research
@@ -240,7 +240,8 @@ export default function App() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[960px] px-6 py-8">
+      <main className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-[960px] px-6 py-8">
         <section className="mb-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
             <textarea
@@ -289,11 +290,13 @@ export default function App() {
               state.status === 'failed') && <MemoPanel state={state} />}
           </>
         )}
+        </div>
       </main>
 
-      <footer className="mx-auto flex max-w-[960px] flex-wrap items-center justify-between gap-4 border-t border-white/10 px-6 py-8 text-sm text-white/60">
-        <span>Built for CascadiaJS 2026 workshop on Render Workflows</span>
-        <div className="flex flex-wrap items-center gap-4">
+      <footer className="shrink-0 border-t border-white/10 bg-[#0a0a0a]">
+        <div className="mx-auto flex max-w-[960px] flex-wrap items-center justify-between gap-4 px-6 py-5 text-sm text-white/60">
+          <span>Built for CascadiaJS 2026 workshop on Render Workflows</span>
+          <div className="flex flex-wrap items-center gap-4">
           <a
             href={GITHUB_REPO}
             target="_blank"
@@ -310,6 +313,7 @@ export default function App() {
           >
             Sign up on Render
           </a>
+          </div>
         </div>
       </footer>
     </div>
