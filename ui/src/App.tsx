@@ -7,6 +7,8 @@ import type { SourceRef } from '../../shared/types'
 
 const GITHUB_REPO = 'https://github.com/ojusave/workshop-demo'
 const DEPLOY_URL = `https://render.com/deploy?repo=${GITHUB_REPO}`
+const RENDER_ICON = 'https://render.com/icon.svg'
+const GITHUB_ICON = 'https://github.githubassets.com/favicons/favicon.svg'
 declare const __BUILD_ID__: string
 const BUILD_ID = typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : 'dev'
 
@@ -261,9 +263,18 @@ export default function App() {
     <div className="flex h-full flex-col">
       <header className="shrink-0 border-b border-white/10 bg-[#0a0a0a]">
         <div className="mx-auto flex max-w-[960px] items-center justify-between px-6 py-4">
-          <span className="text-sm font-semibold tracking-wide text-white">
-            Ticker Research
-          </span>
+          <div className="flex items-center gap-2.5">
+            <img
+              src={RENDER_ICON}
+              alt="Render"
+              width={22}
+              height={22}
+              className="shrink-0"
+            />
+            <span className="text-sm font-semibold tracking-wide text-white">
+              Ticker Research
+            </span>
+          </div>
           <a href={DEPLOY_URL} target="_blank" rel="noreferrer">
             <img
               src="https://render.com/images/deploy-to-render-button.svg"
@@ -352,8 +363,9 @@ export default function App() {
             href={GITHUB_REPO}
             target="_blank"
             rel="noreferrer"
-            className="text-white/70 hover:text-white hover:underline"
+            className="inline-flex items-center gap-1.5 text-white/70 hover:text-white"
           >
+            <img src={GITHUB_ICON} alt="" width={16} height={16} className="shrink-0" />
             GitHub
           </a>
           <a
