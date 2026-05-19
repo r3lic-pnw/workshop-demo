@@ -1,5 +1,6 @@
 import { buildQueries } from './queries.js'
 import { searchOne } from './search.js'
+import { buildIndexedArticles, toSourceRefs } from './sources.js'
 import { synthesize } from './synthesize.js'
 import type { ResearchEvent } from '../../shared/types.js'
 
@@ -28,6 +29,7 @@ export async function research(
     })
   )
 
+  onEvent({ type: 'sources', sources: toSourceRefs(buildIndexedArticles(results)) })
   onEvent({ type: 'synthesizing', message: 'All searches complete. Starting synthesis…' })
   const memo = await synthesize(query, results, (update) => {
     if (update.message) onEvent({ type: 'synthesizing', message: update.message })

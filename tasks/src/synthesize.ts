@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
-import type { Article, SearchResult } from '../../shared/types.js'
+import type { SearchResult } from '../../shared/types.js'
 import { researchDates } from './dates.js'
+import { formatSourcesForPrompt, buildIndexedArticles } from './sources.js'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -15,13 +16,11 @@ export async function synthesize(
   onProgress?: (update: SynthesisProgress) => void
 ): Promise<string> {
   const { today, todayLabel } = researchDates()
-  const articles = sortByPublishedDesc(results.flatMap((r) => r.articles))
-  const sources = articles
-    .map((a, i) => formatSourceBlock(i + 1, a))
-    .join('\n\n---\n\n')
+  const indexed = buildIndexedArticles(results)
+  const sources = formatSourcesForPrompt(indexed)
 
   onProgress?.({
-    message: `Prepared ${articles.length} articles from ${results.length} searches. Calling Claude…`,
+    message: `Prepared ${indexed.length} articles from ${results.length} searches. Calling Claude…`,
   })
 
   const prompt = `Write a research memo on the following topic for an individual investor.
@@ -99,18 +98,3 @@ ${sources}`
   return text
 }
 
-function sortByPublishedDesc(articles: Article[]): Article[] {
-  return [...articles].sort((a, b) => {
-    const ta = Date.parse(a.publishedDate ?? '') || 0
-    const tb = Date.parse(b.publishedDate ?? '') || 0
-    return tb - ta
-  })
-}
-
-function formatSourceBlock(index: number, article: Article): string {
-  const published = article.publishedDate?.trim() || 'unknown'
-  return `[${index}] ${article.title}
-URL: ${article.url}
-Published: ${published}
-${article.text}`
-}

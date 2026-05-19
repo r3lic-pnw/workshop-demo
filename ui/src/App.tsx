@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { renderSignupUrlWithUtms } from './lib/renderSignup'
+import { linkifyCitations } from './linkifyCitations'
+import type { SourceRef } from '../../shared/types'
 
 const GITHUB_REPO = 'https://github.com/ojusave/workshop-demo'
 const DEPLOY_URL = `https://render.com/deploy?repo=${GITHUB_REPO}`
@@ -32,6 +34,7 @@ type AppState = {
   memoDraft: string | null
   activityLog: string[]
   synthesizeMessage: string
+  sources: SourceRef[]
   error: string | null
   failedSearchCount: number
 }
@@ -47,6 +50,7 @@ const initialState: AppState = {
   memoDraft: null,
   activityLog: [],
   synthesizeMessage: '',
+  sources: [],
   error: null,
   failedSearchCount: 0,
 }
@@ -61,6 +65,7 @@ type ResearchEvent = {
   memo?: string
   message?: string
   delta?: string
+  sources?: SourceRef[]
 }
 
 function useResearchStream(
@@ -173,6 +178,11 @@ export default function App() {
         }
         const succeeded = next.searches.filter((s) => s.status === 'success').length
         next.failedSearchCount = succeeded
+        return next
+      }
+
+      if (event.type === 'sources' && event.sources) {
+        next.sources = event.sources
         return next
       }
 
@@ -320,6 +330,7 @@ export default function App() {
               <MemoPanel
                 status={state.status}
                 memo={state.status === 'done' ? state.memo : state.memoDraft}
+                sources={state.sources}
                 failed={state.status === 'failed'}
                 error={state.error}
                 failedSearchCount={state.failedSearchCount}
@@ -457,24 +468,39 @@ function SearchCard({ index, search }: { index: number; search: SearchSlot }) {
 function MemoPanel({
   status,
   memo,
+  sources,
   failed,
   error,
   failedSearchCount,
 }: {
   status: AppState['status']
   memo: string | null
+  sources: SourceRef[]
   failed: boolean
   error: string | null
   failedSearchCount: number
 }) {
+  const linkedMemo = memo ? linkifyCitations(memo, sources) : null
+
   return (
     <section className={`dds-card p-8 ${failed ? 'border-red-500/50' : ''}`}>
       {status === 'synthesizing' && !memo && (
         <p className="text-center text-sm text-white/60">Waiting for first tokens from Claude…</p>
       )}
-      {memo && (
-        <div className="prose prose-invert max-w-none prose-headings:text-white prose-headings:font-semibold prose-h1:text-3xl prose-h1:border-b prose-h1:border-white/10 prose-h1:pb-3 prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-3 prose-a:text-violet-400 prose-a:no-underline hover:prose-a:underline prose-strong:text-white prose-li:text-white/80">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{memo}</ReactMarkdown>
+      {linkedMemo && (
+        <div className="prose prose-invert max-w-none prose-headings:text-white prose-headings:font-semibold prose-h1:text-3xl prose-h1:border-b prose-h1:border-white/10 prose-h1:pb-3 prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-3 prose-a:text-violet-400 hover:prose-a:underline prose-strong:text-white prose-li:text-white/80">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              a: ({ href, children }) => (
+                <a href={href} target="_blank" rel="noreferrer noopener">
+                  {children}
+                </a>
+              ),
+            }}
+          >
+            {linkedMemo}
+          </ReactMarkdown>
         </div>
       )}
       {failed && (
