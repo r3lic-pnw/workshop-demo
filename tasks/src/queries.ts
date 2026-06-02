@@ -1,3 +1,4 @@
+/** Generates date-scoped query variants for a single research topic. */
 import { researchDates } from './dates.js'
 
 export type SearchSpec = {
@@ -5,6 +6,7 @@ export type SearchSpec = {
   startPublishedDate?: string
 }
 
+/** Builds the four fixed query variants used for each research run. */
 export function buildQueries(topic: string): SearchSpec[] {
   const q = topic.trim()
   const { todayLabel, priceSince, newsSince, commentarySince } = researchDates()

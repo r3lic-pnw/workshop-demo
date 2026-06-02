@@ -1,3 +1,4 @@
+/** Composes the Claude prompt and streams a structured memo from source inputs. */
 import Anthropic from '@anthropic-ai/sdk'
 import type { SearchResult } from '../../shared/types.js'
 import { researchDates } from './dates.js'
@@ -10,6 +11,10 @@ type SynthesisProgress = {
   delta?: string
 }
 
+/**
+ * Streams a memo from Claude using the assembled search-source context.
+ * The optional onProgress callback receives status messages and token deltas.
+ */
 export async function synthesize(
   query: string,
   results: SearchResult[],

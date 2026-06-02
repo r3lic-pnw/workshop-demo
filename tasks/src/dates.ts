@@ -1,3 +1,4 @@
+/** Provides US Eastern date utilities used by query and synthesis modules. */
 /** US Eastern calendar dates for market-oriented research. */
 export function researchDates() {
   const today = formatIsoDateEt(new Date())
@@ -13,12 +14,14 @@ export function researchDates() {
   }
 }
 
+/** Returns a date shifted by the provided day offset. */
 function addDays(d: Date, days: number): Date {
   const next = new Date(d)
   next.setDate(next.getDate() + days)
   return next
 }
 
+/** Formats a date as YYYY-MM-DD in US Eastern time. */
 function formatIsoDateEt(d: Date): string {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/New_York',
@@ -28,6 +31,7 @@ function formatIsoDateEt(d: Date): string {
   }).format(d)
 }
 
+/** Converts an ISO date string into a human-friendly month/day/year label. */
 function formatLongDate(iso: string): string {
   const [y, m, day] = iso.split('-').map(Number)
   return new Date(Date.UTC(y, m - 1, day)).toLocaleDateString('en-US', {
